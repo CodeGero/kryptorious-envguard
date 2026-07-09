@@ -187,35 +187,28 @@ def generate(path, output):
 @main.command()
 @click.option("--path", "-p", default=".", help="Project root")
 def audit(path, strict=False):
-    """Full security audit of environment configuration (premium).
+    """Full security audit of environment configuration.
 
-    Checks for: secrets in git history, inconsistent .env files across
-    environments, missing encryption, and CI/CD exposure risks.
+    Runs the free security check: detects placeholder secrets, hardcoded
+    credentials, missing values, and weak .env hygiene.
     """
     console.print()
-    console.print("[yellow]Full security audit is a premium feature.[/yellow]")
-    console.print("Upgrade at https://kryptorious.gumroad.com/l/jbvet")
+    console.print("[bold]EnvGuard security audit[/bold]")
     console.print()
-
-    # Run basic check as free preview
-    ctx = click.Context(check)
-    check.invoke(ctx)
+    check(path, strict=strict)
 
 
 @main.command()
 @click.argument("file1")
 @click.argument("file2")
 def diff(file1, file2):
-    """Compare two .env files and show differences (premium).
+    """Compare two .env files and show all differences.
 
     \b
     Example:
         envguard diff .env .env.production
     """
     console.print()
-    console.print("[yellow]env diff is a premium feature.[/yellow]")
-    console.print("Upgrade at https://kryptorious.gumroad.com/l/jbvet")
-
     v1 = _load_env(file1)
     v2 = _load_env(file2)
 
@@ -224,14 +217,18 @@ def diff(file1, file2):
     only_in_2 = set(v2.keys()) - set(v1.keys())
     different = {k for k in all_keys if k in v1 and k in v2 and v1[k] != v2[k]}
 
-    console.print(f"\n[bold]Preview:[/bold] {len(all_keys)} total keys")
+    console.print(f"[bold]Diff:[/bold] {len(all_keys)} total keys")
     if only_in_1:
-        console.print(f"  Only in {file1}: {', '.join(sorted(only_in_1)[:5])}")
+        console.print(f"  [yellow]Only in {file1}:[/yellow] {', '.join(sorted(only_in_1))}")
     if only_in_2:
-        console.print(f"  Only in {file2}: {', '.join(sorted(only_in_2)[:5])}")
+        console.print(f"  [yellow]Only in {file2}:[/yellow] {', '.join(sorted(only_in_2))}")
     if different:
-        console.print(f"  Different values: {len(different)} keys")
-    console.print("\n[dim]Full diff requires premium upgrade.[/dim]")
+        console.print(f"  [red]Different values:[/red]")
+        for k in sorted(different):
+            console.print(f"    {k}: {v1[k]!r} -> {v2[k]!r}")
+    if not only_in_1 and not only_in_2 and not different:
+        console.print("  [green]No differences.[/green]")
+    console.print()
 
 
 if __name__ == "__main__":
